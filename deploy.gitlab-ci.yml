@@ -1,0 +1,22 @@
+variables:
+  PATH_TO_UI_PACKAGE_JSON: ./ui/package.json
+
+git-tag:
+  before_script:
+    - npx prettier-package-json $PATH_TO_UI_PACKAGE_JSON --write --tab-width 4
+  dependencies:
+    - build-job
+  stage: git-tag
+  script:
+    - cat $PATH_TO_UI_PACKAGE_JSON
+    - VERSION=$(node -pe 'JSON.parse(process.argv[1]).version' "$(cat ./ui/package.json)")
+    - echo $VERSION
+    - ls
+    - git config --global user.email "$EMAIL"
+    - git config --global user.name "$USER"
+    - git commit $PATH_TO_UI_PACKAGE_JSON -m "[ci skip] Update version in package.json to ${VERSION} " --no-verify
+    - git tag ${VERSION}
+    - git push -f https://${GIT_SDP_USERNAME}:${GIT_SDP_TOKEN}@${GIT_SDP_URL} HEAD:${CI_COMMIT_BRANCH} -o ci.skip
+    - git push -f https://${GIT_SDP_USERNAME}:${GIT_SDP_TOKEN}@${GIT_SDP_URL} HEAD:${CI_COMMIT_BRANCH} -o ci.skip --tags
+  rules:
+    - if: $CI_COMMIT_BRANCH  == 'dev'
